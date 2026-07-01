@@ -1,2 +1,99 @@
-<h1>Smart Home Manual</h1>
-<p>Manual în construcție.</p>
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Home Manual</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#222}
+header{background:#1565c0;color:#fff;padding:20px;text-align:center}
+nav{position:sticky;top:0;background:#0d47a1;padding:10px}
+nav a{color:#fff;margin:0 10px;text-decoration:none}
+section{max-width:900px;margin:auto;background:#fff;margin-top:20px;padding:20px;border-radius:8px}
+h2{color:#1565c0}
+code{background:#eee;padding:2px 4px}
+footer{text-align:center;padding:20px;color:#666}
+</style>
+</head>
+<body>
+<header>
+<h1>Smart Home ESP8266 + Blynk</h1>
+<p>Manual de utilizare</p>
+</header>
+<nav>
+<a href="#prezentare">Prezentare</a>
+<a href="#wifi">WiFi</a>
+<a href="#blynk">Blynk</a>
+<a href="#moduri">Moduri</a>
+<a href="#oled">OLED</a>
+<a href="#depanare">Depanare</a>
+</nav>
+
+<section id="prezentare">
+<h2>Prezentare</h2>
+<p>Acest sistem controlează încălzirea, răcirea și dezumidificarea folosind un ESP8266, aplicația Blynk și comenzi IR pentru aerul condiționat LG.</p>
+<ul>
+<li>ESP8266 NodeMCU</li>
+<li>WiFiManager</li>
+<li>BMP280</li>
+<li>DHT11</li>
+<li>OLED SSD1306</li>
+<li>Blynk IoT</li>
+</ul>
+</section>
+
+<section id="wifi">
+<h2>Configurare WiFi</h2>
+<ol>
+<li>Pornește dispozitivul.</li>
+<li>Conectează telefonul la hotspotul <b>SmartHome_Setup</b>.</li>
+<li>Deschide <code>http://192.168.4.1</code>.</li>
+<li>Alege rețeaua WiFi și introdu parola.</li>
+<li>Apasă Save.</li>
+</ol>
+</section>
+
+<section id="blynk">
+<h2>Aplicația Blynk</h2>
+<ul>
+<li>Heat Setpoint</li>
+<li>Cool Setpoint</li>
+<li>Humidity Setpoint</li>
+<li>Timer</li>
+<li>Refresh</li>
+<li>Reset WiFi</li>
+<li>Help</li>
+</ul>
+</section>
+
+<section id="moduri">
+<h2>Moduri de funcționare</h2>
+<h3>❄ VARĂ</h3>
+<p>Controlează răcirea cu AC.</p>
+<h3>🔥 IARNĂ</h3>
+<p>Controlează releul de încălzire.</p>
+<h3>💧 HUM</h3>
+<p>Controlează dezumidificarea. Se recomandă o pauză între schimbarea modurilor pentru protejarea AC.</p>
+<h3>⏸ STANDBY</h3>
+<p>Oprește toate ieșirile și reduce frecvența actualizărilor.</p>
+</section>
+
+<section id="oled">
+<h2>OLED</h2>
+<p>Afișează temperatura, presiunea, umiditatea, modul activ și adresa IP.</p>
+</section>
+
+<section id="depanare">
+<h2>Depanare</h2>
+<ul>
+<li>Dacă nu apare hotspotul, folosește <b>Reset WiFi</b>.</li>
+<li>Dacă BMP280 nu este detectat, verifică magistrala I²C.</li>
+<li>Dacă Blynk nu se conectează, verifică tokenul și conexiunea la Internet.</li>
+</ul>
+</section>
+
+<footer>
+<p>Smart Home • Autor: Daniel Matei</p>
+</footer>
+</body>
+</html>
