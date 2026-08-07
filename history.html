@@ -1,0 +1,99 @@
+
+  <!DOCTYPE html>
+  <html>
+  <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Home History</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+  body{
+      font-family: Arial;
+      margin:10px;
+  }
+  .chart-container{
+      width:100%;
+      height:300px;
+      margin-bottom:40px;
+  }
+  h2{
+      text-align:center;
+  }
+  </style>
+  </head>
+
+  <body>
+
+  <h1>Smart Home History</h1>
+
+  <h2>Presiune [hPa]</h2>
+  <div class="chart-container">
+  <canvas id="presChart"></canvas>
+  </div>
+
+  <h2>Temperatura [C]</h2>
+  <div class="chart-container">
+  <canvas id="tempChart"></canvas>
+  </div>
+
+  <h2>Umiditate [%]</h2>
+  <div class="chart-container">
+  <canvas id="humChart"></canvas>
+  </div>
+
+  <script>
+
+  fetch('/history')
+  .then(response => response.json())
+  .then(data => {
+
+  let labels = [];
+
+  for(let i=0;i<data.length;i++)
+  {
+      labels.push(i);
+  }
+
+  let tempValues = data.map(x => x.temp);
+  let humValues  = data.map(x => x.hum);
+  let presValues = data.map(x => x.pres);
+
+  new Chart(document.getElementById('presChart'), {
+      type: 'line',
+      data: {
+          labels: labels,
+          datasets: [{
+              label: 'Presiune [hPa]',
+              data: presValues
+          }]
+      }
+  });
+
+  new Chart(document.getElementById('tempChart'), {
+      type: 'line',
+      data: {
+          labels: labels,
+          datasets: [{
+              label: 'Temperatura [C]',
+              data: tempValues
+          }]
+      }
+  });
+
+  new Chart(document.getElementById('humChart'), {
+      type: 'line',
+      data: {
+          labels: labels,
+          datasets: [{
+              label: 'Umiditate [%]',
+              data: humValues
+          }]
+      }
+  });
+  });
+
+  </script>
+
+  </body>
+  </html>
