@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>SmartHome History-try1</title>
+<title>SmartHome History-try2</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -25,70 +25,127 @@
 const API_KEY = "J1W7SJONHU0G46GS";
 const CHANNEL_ID = "3447801";
 
+async function loadFeeds() {
 
-// --------------------------------------------------
-// Cerem 720 + ultimele 100
-// --------------------------------------------------
+    let feeds = [];
+    let end = null;
 
-Promise.all([
+    while (feeds.length < 720) {
 
-    fetch(
-        https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json +
-        ?api_key=${API_KEY}&results=720
-    ).then(response => response.json()),
+        let url =
+            "https://api.thingspeak.com/channels/" +
+            CHANNEL_ID +
+            "/feeds.json?api_key=" +
+            API_KEY +
+            "&results=100";
 
-    fetch(
-        https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json +
-        ?api_key=${API_KEY}&results=100&_=${Date.now()}
-    ).then(response => response.json())
+        if (end !== null) {
+            url += "&end=" + end;
+        }
 
-])
+        url += "&_=" + Date.now();
 
-.then(([history, latest]) => {
+        console.log(url);
 
-    console.log("Istoric:", history.feeds.length);
-    console.log("Ultimele:", latest.feeds.length);
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+        }
+
+        const data = await response.json();
+
+        if (!data.feeds || data.feeds.length === 0) {
+            break;
+        }
+
+        console.log(
+            "Am primit:",
+            data.feeds.length,
+            "entry-uri"
+        );
+
+        // Adăugăm datele
+        feeds.push(...data.feeds);
+
+        // Cel mai vechi entry din acest bloc
+        const oldest = data.feeds[0];
+
+        console.log(
+            "Bloc:",
+            data.feeds[0].entry_id,
+            "->",
+            data.feeds[data.feeds.length - 1].entry_id
+        );
+
+        // Mergem cu o secundă înainte de cel mai vechi
+        const d = new Date(oldest.created_at);
+        d.setSeconds(d.getSeconds() - 1);
+
+        // Format ThingSpeak
+        end =
+            d.getUTCFullYear() +
+            "-" +
+            String(d.getUTCMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(d.getUTCDate()).padStart(2, "0") +
+            "T" +
+            String(d.getUTCHours()).padStart(2, "0") +
+            ":" +
+            String(d.getUTCMinutes()).padStart(2, "0") +
+            ":" +
+            String(d.getUTCSeconds()).padStart(2, "0") +
+            "Z";
+
+        if (data.feeds.length < 100) {
+            break;
+        }
+    }
 
 
-    // --------------------------------------------------
-    // Combinăm datele
-    // --------------------------------------------------
+    // Eliminăm duplicatele
+    const unique = new Map();
 
-    const map = new Map();
-
-
-    // Istoricul de 720
-    history.feeds.forEach(item => {
-        map.set(item.entry_id, item);
+    feeds.forEach(item => {
+        unique.set(item.entry_id, item);
     });
 
-
-    // Ultimele 100 au prioritate
-    // deoarece acestea nu sunt cache-uite
-    latest.feeds.forEach(item => {
-        map.set(item.entry_id, item);
-    });
+    feeds = Array.from(unique.values());
 
 
-    // Transformăm Map în array
-    let feeds = Array.from(map.values());
-
-
-    // Sortare cronologică
+    // Sortăm după entry_id
     feeds.sort((a, b) => a.entry_id - b.entry_id);
 
 
-    // Păstrăm ultimele 720
+    // Ultimele 720
     feeds = feeds.slice(-720);
 
 
     console.log("TOTAL FINAL:", feeds.length);
-    console.log("ULTIMUL ENTRY:", feeds[feeds.length - 1]);
+
+    console.log(
+        "PRIMUL:",
+        feeds[0]?.entry_id
+    );
+
+    console.log(
+        "ULTIMUL:",
+        feeds[feeds.length - 1]?.entry_id
+    );
 
 
-    // --------------------------------------------------
-    // Pregătim datele pentru grafice
-    // --------------------------------------------------
+    return feeds;
+}
+
+
+loadFeeds()
+.then(feeds => {
+
+    if (feeds.length === 0) {
+        console.error("Nu există date!");
+        return;
+    }
+
 
     const labels = [];
     const temps = [];
@@ -109,20 +166,16 @@ Promise.all([
     });
 
 
-    // --------------------------------------------------
-    // TEMPERATURA
-    // --------------------------------------------------
-
     new Chart(
-        document.getElementById('tempChart'),
+        document.getElementById("tempChart"),
         {
-            type: 'line',
+            type: "line",
 
             data: {
                 labels: labels,
 
                 datasets: [{
-                    label: 'Temperatura',
+                    label: "Temperatura",
                     data: temps
                 }]
             }
@@ -130,20 +183,16 @@ Promise.all([
     );
 
 
-    // --------------------------------------------------
-    // UMIDITATE
-    // --------------------------------------------------
-
     new Chart(
-        document.getElementById('humChart'),
+        document.getElementById("humChart"),
         {
-            type: 'line',
+            type: "line",
 
             data: {
                 labels: labels,
 
                 datasets: [{
-                    label: 'Umiditate',
+                    label: "Umiditate",
                     data: hums
                 }]
             }
@@ -151,20 +200,16 @@ Promise.all([
     );
 
 
-    // --------------------------------------------------
-    // PRESIUNE
-    // --------------------------------------------------
-
     new Chart(
-        document.getElementById('presChart'),
+        document.getElementById("presChart"),
         {
-            type: 'line',
+            type: "line",
 
             data: {
                 labels: labels,
 
                 datasets: [{
-                    label: 'Presiune',
+                    label: "Presiune",
                     data: press
                 }]
             }
@@ -172,11 +217,9 @@ Promise.all([
     );
 
 })
-
-
 .catch(error => {
 
-    console.error("EROARE THINGSPEAK:", error);
+    console.error("EROARE:", error);
 
 });
 
