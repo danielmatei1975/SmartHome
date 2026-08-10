@@ -21,85 +21,95 @@
 
 const API_KEY = "J1W7SJONHU0G46GS";
 const CHANNEL_ID = "3447801";
-const TOTAL_RESULTS = 720;
-const BLOCK_SIZE = 100;
-
-
-// --------------------------------------------------
-// Ia ultimele 720 de entry-uri în blocuri de câte 100
-// --------------------------------------------------
 
 async function getData() {
 
     let allFeeds = [];
     let endTime = null;
 
-    while (allFeeds.length < TOTAL_RESULTS) {
+    while (allFeeds.length < 720) {
 
         let url =
             https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json +
             ?api_key=${API_KEY} +
-            &results=${BLOCK_SIZE};
+            &results=100 +
+            &_=${Date.now()};
 
-        // Pentru următoarele blocuri cerem date mai vechi
-        if (endTime) {
+        if (endTime !== null) {
             url += &end=${encodeURIComponent(endTime)};
         }
 
-        // Cache-busting pentru browser
-        url += &_=${Date.now()};
-
         const response = await fetch(url);
         const data = await response.json();
+
+        console.log("Request:", url);
+        console.log("Primit:", data.feeds ? data.feeds.length : 0);
 
         if (!data.feeds || data.feeds.length === 0) {
             break;
         }
 
-        // Adăugăm doar entry-urile care nu există deja
-        for (const item of data.feeds) {
-
-            if (!allFeeds.some(x => x.entry_id === item.entry_id)) {
-                allFeeds.push(item);
-            }
-        }
+        // Adaugă datele
+        allFeeds.push(...data.feeds);
 
         // Cel mai vechi entry primit
-        const oldest = data.feeds[data.feeds.length - 1];
+        const oldest = data.feeds[0];
 
-        endTime = oldest.created_at;
+        // Cu o secundă înainte de cel mai vechi
+        const oldDate = new Date(oldest.created_at);
+        oldDate.setSeconds(oldDate.getSeconds() - 1);
 
-        // Dacă ThingSpeak nu mai are date, ieșim
-        if (data.feeds.length < BLOCK_SIZE) {
+        endTime = oldDate.toISOString();
+
+        // Dacă am ajuns la 720
+        if (allFeeds.length >= 720) {
+            break;
+        }
+
+        // Dacă au venit mai puțin de 100, nu mai există suficiente date
+        if (data.feeds.length < 100) {
             break;
         }
     }
 
+    // Eliminăm eventualele duplicate după entry_id
+    const unique = [];
 
-    // Sortăm cronologic
-    allFeeds.sort((a, b) => a.entry_id - b.entry_id);
+    const ids = new Set();
 
-    // Păstrăm exact ultimele 720
-    allFeeds = allFeeds.slice(-TOTAL_RESULTS);
+    allFeeds.forEach(item => {
 
-    console.log("Entry-uri încărcate:", allFeeds.length);
-    console.log("Ultimul entry:", allFeeds[allFeeds.length - 1]);
+        if (!ids.has(item.entry_id)) {
+            ids.add(item.entry_id);
+            unique.push(item);
+        }
 
-    return allFeeds;
+    });
+
+    // Sortare cronologică
+    unique.sort((a, b) => a.entry_id - b.entry_id);
+
+    // Ultimele 720
+    return unique.slice(-720);
 }
 
 
-// --------------------------------------------------
-// Construim graficele
-// --------------------------------------------------
-
 getData().then(feeds => {
+
+    console.log("TOTAL ENTRY-URI:", feeds.length);
+
+    if (feeds.length === 0) {
+        console.error("Nu au fost primite date de la ThingSpeak.");
+        return;
+    }
+
+    console.log("PRIMUL:", feeds[0]);
+    console.log("ULTIMUL:", feeds[feeds.length - 1]);
 
     const labels = [];
     const temps = [];
     const hums = [];
     const press = [];
-
 
     feeds.forEach(item => {
 
@@ -114,16 +124,12 @@ getData().then(feeds => {
     });
 
 
-    // TEMPERATURA
-
     new Chart(
         document.getElementById('tempChart'),
         {
             type: 'line',
-
             data: {
                 labels: labels,
-
                 datasets: [{
                     label: 'Temperatura',
                     data: temps
@@ -133,16 +139,12 @@ getData().then(feeds => {
     );
 
 
-    // UMIDITATE
-
     new Chart(
         document.getElementById('humChart'),
         {
             type: 'line',
-
             data: {
                 labels: labels,
-
                 datasets: [{
                     label: 'Umiditate',
                     data: hums
@@ -152,16 +154,12 @@ getData().then(feeds => {
     );
 
 
-    // PRESIUNE
-
     new Chart(
         document.getElementById('presChart'),
         {
             type: 'line',
-
             data: {
                 labels: labels,
-
                 datasets: [{
                     label: 'Presiune',
                     data: press
