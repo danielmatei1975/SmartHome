@@ -164,21 +164,20 @@ loadFeeds()
         press.push(parseFloat(item.field3));
 
     });
-
-
     new Chart(
         document.getElementById("tempChart"),
         {
             type: "line",
-
+    
             data: {
                 labels: labels,
-
+    
                 datasets: [{
                     label: "Temperatura",
                     data: temps
                 }]
-            }
+            },
+    
             options: {
                 scales: {
                     x: {
@@ -196,47 +195,94 @@ loadFeeds()
                             font: {
                                 size: 12,
                                 weight: 'bold'
-                                    }
-                                }
                             }
                         }
                     }
+                }
+            }
         }
     );
-
-
+    
+    
     new Chart(
         document.getElementById("humChart"),
         {
             type: "line",
-
+    
             data: {
                 labels: labels,
-
+    
                 datasets: [{
                     label: "Umiditate",
                     data: hums
                 }]
+            },
+    
+            options: {
+                scales: {
+                    x: {
+                        ticks: {
+                            maxTicksLimit: 8,
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            maxTicksLimit: 6,
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
             }
         }
     );
 
 
-    new Chart(
-        document.getElementById("presChart"),
-        {
-            type: "line",
+new Chart(
+    document.getElementById("presChart"),
+    {
+        type: "line",
 
-            data: {
-                labels: labels,
+        data: {
+            labels: labels,
 
-                datasets: [{
-                    label: "Presiune",
-                    data: press
-                }]
+            datasets: [{
+                label: "Presiune",
+                data: press
+            }]
+        },
+
+        options: {
+            scales: {
+                x: {
+                    ticks: {
+                        maxTicksLimit: 8,
+                        font: {
+                            size: 11,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        maxTicksLimit: 6,
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
+                    }
+                }
             }
         }
-    );
+    }
+);
+
 
 })
 .catch(error => {
