@@ -5,31 +5,104 @@
 <title>SmartHome History</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
 
 <h2>Presiune [hPa]</h2>
 <canvas id="presChart"></canvas>
-    
+
 <h2>Temperatura [C]</h2>
 <canvas id="tempChart"></canvas>
 
 <h2>Umiditate [%]</h2>
 <canvas id="humChart"></canvas>
 
-
-
 <script>
 
-fetch("https://api.thingspeak.com/channels/3447801/feeds.json?api_key=J1W7SJONHU0G46GS&results=10&_=" + Date.now())
-.then(response => response.json())
-.then(data => {
+const API_KEY = "J1W7SJONHU0G46GS";
+const CHANNEL_ID = "3447801";
+const TOTAL_RESULTS = 720;
+const BLOCK_SIZE = 100;
+
+
+// --------------------------------------------------
+// Ia ultimele 720 de entry-uri în blocuri de câte 100
+// --------------------------------------------------
+
+async function getData() {
+
+    let allFeeds = [];
+    let endTime = null;
+
+    while (allFeeds.length < TOTAL_RESULTS) {
+
+        let url =
+            https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json +
+            ?api_key=${API_KEY} +
+            &results=${BLOCK_SIZE};
+
+        // Pentru următoarele blocuri cerem date mai vechi
+        if (endTime) {
+            url += &end=${encodeURIComponent(endTime)};
+        }
+
+        // Cache-busting pentru browser
+        url += &_=${Date.now()};
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.feeds || data.feeds.length === 0) {
+            break;
+        }
+
+        // Adăugăm doar entry-urile care nu există deja
+        for (const item of data.feeds) {
+
+            if (!allFeeds.some(x => x.entry_id === item.entry_id)) {
+                allFeeds.push(item);
+            }
+        }
+
+        // Cel mai vechi entry primit
+        const oldest = data.feeds[data.feeds.length - 1];
+
+        endTime = oldest.created_at;
+
+        // Dacă ThingSpeak nu mai are date, ieșim
+        if (data.feeds.length < BLOCK_SIZE) {
+            break;
+        }
+    }
+
+
+    // Sortăm cronologic
+    allFeeds.sort((a, b) => a.entry_id - b.entry_id);
+
+    // Păstrăm exact ultimele 720
+    allFeeds = allFeeds.slice(-TOTAL_RESULTS);
+
+    console.log("Entry-uri încărcate:", allFeeds.length);
+    console.log("Ultimul entry:", allFeeds[allFeeds.length - 1]);
+
+    return allFeeds;
+}
+
+
+// --------------------------------------------------
+// Construim graficele
+// --------------------------------------------------
+
+getData().then(feeds => {
 
     const labels = [];
     const temps = [];
     const hums = [];
     const press = [];
 
-    data.feeds.forEach(item => {
+
+    feeds.forEach(item => {
+
         labels.push(
             new Date(item.created_at).toLocaleTimeString()
         );
@@ -37,14 +110,20 @@ fetch("https://api.thingspeak.com/channels/3447801/feeds.json?api_key=J1W7SJONHU
         temps.push(parseFloat(item.field1));
         hums.push(parseFloat(item.field2));
         press.push(parseFloat(item.field3));
+
     });
+
+
+    // TEMPERATURA
 
     new Chart(
         document.getElementById('tempChart'),
         {
             type: 'line',
+
             data: {
                 labels: labels,
+
                 datasets: [{
                     label: 'Temperatura',
                     data: temps
@@ -53,12 +132,17 @@ fetch("https://api.thingspeak.com/channels/3447801/feeds.json?api_key=J1W7SJONHU
         }
     );
 
+
+    // UMIDITATE
+
     new Chart(
         document.getElementById('humChart'),
         {
             type: 'line',
+
             data: {
                 labels: labels,
+
                 datasets: [{
                     label: 'Umiditate',
                     data: hums
@@ -67,12 +151,17 @@ fetch("https://api.thingspeak.com/channels/3447801/feeds.json?api_key=J1W7SJONHU
         }
     );
 
+
+    // PRESIUNE
+
     new Chart(
         document.getElementById('presChart'),
         {
             type: 'line',
+
             data: {
                 labels: labels,
+
                 datasets: [{
                     label: 'Presiune',
                     data: press
