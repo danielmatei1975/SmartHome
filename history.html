@@ -2,8 +2,10 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>SmartHome History</title>
+<title>SmartHome History-try1</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 
 <body>
@@ -17,91 +19,82 @@
 <h2>Umiditate [%]</h2>
 <canvas id="humChart"></canvas>
 
+
 <script>
 
 const API_KEY = "J1W7SJONHU0G46GS";
 const CHANNEL_ID = "3447801";
 
-async function getData() {
 
-    let allFeeds = [];
+// --------------------------------------------------
+// Cerem 720 + ultimele 100
+// --------------------------------------------------
 
-    // Luăm 8 blocuri de câte 100
-    // și folosim offset pentru a evita cache-ul >100
+Promise.all([
 
-    for (let offset = 0; offset < 800; offset += 100) {
+    fetch(
+        https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json +
+        ?api_key=${API_KEY}&results=720
+    ).then(response => response.json()),
 
-        const url =
-            https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json +
-            ?api_key=${API_KEY} +
-            &results=100 +
-            &offset=${offset} +
-            &_=${Date.now()};
+    fetch(
+        https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json +
+        ?api_key=${API_KEY}&results=100&_=${Date.now()}
+    ).then(response => response.json())
 
-        console.log("Cer:", offset);
+])
 
-        const response = await fetch(url);
+.then(([history, latest]) => {
 
-        if (!response.ok) {
-            throw new Error("ThingSpeak HTTP error: " + response.status);
-        }
+    console.log("Istoric:", history.feeds.length);
+    console.log("Ultimele:", latest.feeds.length);
 
-        const data = await response.json();
 
-        console.log(
-            "Offset:",
-            offset,
-            "Entry-uri:",
-            data.feeds ? data.feeds.length : 0
-        );
+    // --------------------------------------------------
+    // Combinăm datele
+    // --------------------------------------------------
 
-        if (data.feeds) {
-            allFeeds.push(...data.feeds);
-        }
+    const map = new Map();
 
-        if (!data.feeds || data.feeds.length < 100) {
-            break;
-        }
-    }
 
-    // Eliminăm duplicatele
-    const unique = [];
-    const ids = new Set();
-
-    allFeeds.forEach(item => {
-
-        if (!ids.has(item.entry_id)) {
-            ids.add(item.entry_id);
-            unique.push(item);
-        }
-
+    // Istoricul de 720
+    history.feeds.forEach(item => {
+        map.set(item.entry_id, item);
     });
 
-    // Sortare după entry_id
-    unique.sort((a, b) => a.entry_id - b.entry_id);
 
-    // Ultimele 720
-    return unique.slice(-720);
-}
+    // Ultimele 100 au prioritate
+    // deoarece acestea nu sunt cache-uite
+    latest.feeds.forEach(item => {
+        map.set(item.entry_id, item);
+    });
 
 
-getData()
-.then(feeds => {
+    // Transformăm Map în array
+    let feeds = Array.from(map.values());
 
-    console.log("TOTAL:", feeds.length);
 
-    if (feeds.length === 0) {
-        console.error("NU S-AU PRIMIT DATE!");
-        return;
-    }
+    // Sortare cronologică
+    feeds.sort((a, b) => a.entry_id - b.entry_id);
 
-    console.log("PRIMUL:", feeds[0]);
-    console.log("ULTIMUL:", feeds[feeds.length - 1]);
+
+    // Păstrăm ultimele 720
+    feeds = feeds.slice(-720);
+
+
+    console.log("TOTAL FINAL:", feeds.length);
+    console.log("ULTIMUL ENTRY:", feeds[feeds.length - 1]);
+
+
+    // --------------------------------------------------
+    // Pregătim datele pentru grafice
+    // --------------------------------------------------
 
     const labels = [];
     const temps = [];
     const hums = [];
     const press = [];
+
 
     feeds.forEach(item => {
 
@@ -116,7 +109,9 @@ getData()
     });
 
 
+    // --------------------------------------------------
     // TEMPERATURA
+    // --------------------------------------------------
 
     new Chart(
         document.getElementById('tempChart'),
@@ -135,7 +130,9 @@ getData()
     );
 
 
+    // --------------------------------------------------
     // UMIDITATE
+    // --------------------------------------------------
 
     new Chart(
         document.getElementById('humChart'),
@@ -154,7 +151,9 @@ getData()
     );
 
 
+    // --------------------------------------------------
     // PRESIUNE
+    // --------------------------------------------------
 
     new Chart(
         document.getElementById('presChart'),
@@ -173,9 +172,11 @@ getData()
     );
 
 })
+
+
 .catch(error => {
 
-    console.error("EROARE:", error);
+    console.error("EROARE THINGSPEAK:", error);
 
 });
 
