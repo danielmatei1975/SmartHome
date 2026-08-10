@@ -20,7 +20,7 @@
 
 <script>
 
-fetch("https://api.thingspeak.com/channels/3447801/feeds.json?api_key=J1W7SJONHU0G46GS&results=720")
+fetch("https://api.thingspeak.com/channels/3447801/feeds.json?api_key=J1W7SJONHU0G46GS&results=720&_=" + Date.now())
 .then(response => response.json())
 .then(data => {
 
