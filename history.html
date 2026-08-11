@@ -27,117 +27,48 @@ const CHANNEL_ID = "3447801";
 
 async function loadFeeds() {
 
-    let feeds = [];
-    let end = null;
+    const url =
+        "https://api.thingspeak.com/channels/" +
+        CHANNEL_ID +
+        "/feeds.json?api_key=" +
+        API_KEY +
+        "&results=100&_=" + Date.now();
 
-    while (feeds.length < 720) {
+    console.log(url);
 
-        let url =
-            "https://api.thingspeak.com/channels/" +
-            CHANNEL_ID +
-            "/feeds.json?api_key=" +
-            API_KEY +
-            "&results=100";
+    const response = await fetch(url);
 
-        if (end !== null) {
-            url += "&end=" + end;
-        }
-
-        url += "&_=" + Date.now();
-
-        console.log(url);
-
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            throw new Error("HTTP " + response.status);
-        }
-
-        const data = await response.json();
-
-        if (!data.feeds || data.feeds.length === 0) {
-            break;
-        }
-
-        console.log(
-            "Am primit:",
-            data.feeds.length,
-            "entry-uri"
-        );
-
-        // Adăugăm datele
-        feeds.push(...data.feeds);
-
-        // Cel mai vechi entry din acest bloc
-        const oldest = data.feeds[0];
-
-        console.log(
-            "Bloc:",
-            data.feeds[0].entry_id,
-            "->",
-            data.feeds[data.feeds.length - 1].entry_id
-        );
-
-        // Mergem cu o secundă înainte de cel mai vechi
-        const d = new Date(oldest.created_at);
-        d.setSeconds(d.getSeconds() - 1);
-
-        // Format ThingSpeak
-        end =
-            d.getUTCFullYear() +
-            "-" +
-            String(d.getUTCMonth() + 1).padStart(2, "0") +
-            "-" +
-            String(d.getUTCDate()).padStart(2, "0") +
-            "T" +
-            String(d.getUTCHours()).padStart(2, "0") +
-            ":" +
-            String(d.getUTCMinutes()).padStart(2, "0") +
-            ":" +
-            String(d.getUTCSeconds()).padStart(2, "0") +
-            "Z";
-
-        if (data.feeds.length < 100) {
-            break;
-        }
+    if (!response.ok) {
+        throw new Error("HTTP " + response.status);
     }
 
+    const data = await response.json();
 
-    // Eliminăm duplicatele
-    const unique = new Map();
+    if (!data.feeds || data.feeds.length === 0) {
+        return [];
+    }
 
-    feeds.forEach(item => {
-        unique.set(item.entry_id, item);
-    });
+    console.log("Am primit:", data.feeds.length, "entry-uri");
 
-    feeds = Array.from(unique.values());
-
-
-    // Sortăm după entry_id
-    feeds.sort((a, b) => a.entry_id - b.entry_id);
-
-
-    // Ultimele 720
-    feeds = feeds.slice(-720);
-
-
-    console.log("TOTAL FINAL:", feeds.length);
+    // Sortare cronologica dupa data si ora
+    data.feeds.sort((a, b) =>
+        new Date(a.created_at) - new Date(b.created_at)
+    );
 
     console.log(
         "PRIMUL:",
-        feeds[0]?.entry_id
+        data.feeds[0].entry_id,
+        data.feeds[0].created_at
     );
 
     console.log(
         "ULTIMUL:",
-        feeds[feeds.length - 1]?.entry_id
+        data.feeds[data.feeds.length - 1].entry_id,
+        data.feeds[data.feeds.length - 1].created_at
     );
 
-
-    return feeds;
+    return data.feeds;
 }
-
-
 loadFeeds()
 .then(feeds => {
 
