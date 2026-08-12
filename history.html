@@ -6,17 +6,49 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<style>
+
+.chart-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.last-value {
+    color: #2196F3;
+    font-size: 28px;
+    font-weight: bold;
+    margin-left: 15px;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<h2>Presiune [hPa]</h2>
+<h2 class="chart-title">
+    Presiune [hPa]
+    <span id="lastPress" class="last-value"></span>
+</h2>
+
 <canvas id="presChart"></canvas>
 
-<h2>Temperatura [C]</h2>
+
+<h2 class="chart-title">
+    Temperatura [C]
+    <span id="lastTemp" class="last-value"></span>
+</h2>
+
 <canvas id="tempChart"></canvas>
 
-<h2>Umiditate [%]</h2>
+
+<h2 class="chart-title">
+    Umiditate [%]
+    <span id="lastHum" class="last-value"></span>
+</h2>
+
 <canvas id="humChart"></canvas>
 
 
@@ -24,6 +56,7 @@
 
 const API_KEY = "J1W7SJONHU0G46GS";
 const CHANNEL_ID = "3447801";
+
 
 async function loadFeeds() {
 
@@ -69,11 +102,14 @@ async function loadFeeds() {
 
     return data.feeds;
 }
+
+
 loadFeeds()
+
 .then(feeds => {
 
     if (feeds.length === 0) {
-        console.error("Nu există date!");
+        console.error("Nu exista date!");
         return;
     }
 
@@ -91,131 +127,192 @@ loadFeeds()
         );
 
         temps.push(parseFloat(item.field1));
+
         hums.push(parseFloat(item.field2));
+
         press.push(parseFloat(item.field3));
 
     });
+
+
+    // =====================================================
+    // ULTIMELE VALORI
+    // =====================================================
+
+    const lastTemp = temps[temps.length - 1];
+
+    const lastHum = hums[hums.length - 1];
+
+    const lastPress = press[press.length - 1];
+
+
+    document.getElementById("lastTemp").textContent =
+        lastTemp.toFixed(1) + " °C";
+
+
+    document.getElementById("lastHum").textContent =
+        lastHum.toFixed(1) + " %";
+
+
+    document.getElementById("lastPress").textContent =
+        (lastPress * 1000).toFixed(1) + " hPa";
+
+
+    // =====================================================
+    // TEMPERATURA
+    // =====================================================
+
     new Chart(
         document.getElementById("tempChart"),
         {
             type: "line",
-    
+
             data: {
                 labels: labels,
-    
+
                 datasets: [{
                     label: "Temperatura",
                     data: temps
                 }]
             },
-    
+
             options: {
+
                 scales: {
+
                     x: {
                         ticks: {
                             maxTicksLimit: 8,
+
                             font: {
                                 size: 14,
                                 weight: 'bold'
                             }
                         }
                     },
+
                     y: {
                         ticks: {
                             maxTicksLimit: 6,
+
                             font: {
                                 size: 14,
                                 weight: 'bold'
                             }
                         }
                     }
+
                 }
+
             }
         }
     );
-    
-    
+
+
+    // =====================================================
+    // UMIDITATE
+    // =====================================================
+
     new Chart(
         document.getElementById("humChart"),
         {
             type: "line",
-    
+
             data: {
                 labels: labels,
-    
+
                 datasets: [{
                     label: "Umiditate",
                     data: hums
                 }]
             },
-    
+
             options: {
+
                 scales: {
+
                     x: {
                         ticks: {
                             maxTicksLimit: 8,
+
                             font: {
                                 size: 14,
                                 weight: 'bold'
                             }
                         }
                     },
+
                     y: {
                         ticks: {
                             maxTicksLimit: 6,
+
                             font: {
                                 size: 14,
                                 weight: 'bold'
                             }
                         }
                     }
+
                 }
+
             }
         }
     );
 
 
-new Chart(
-    document.getElementById("presChart"),
-    {
-        type: "line",
+    // =====================================================
+    // PRESIUNE
+    // =====================================================
 
-        data: {
-            labels: labels,
+    new Chart(
+        document.getElementById("presChart"),
+        {
+            type: "line",
 
-            datasets: [{
-                label: "Presiune",
-                data: press
-            }]
-        },
+            data: {
+                labels: labels,
 
-        options: {
-            scales: {
-                x: {
-                    ticks: {
-                        maxTicksLimit: 8,
-                        font: {
-                            size: 14,
-                            weight: 'bold'
+                datasets: [{
+                    label: "Presiune",
+                    data: press
+                }]
+            },
+
+            options: {
+
+                scales: {
+
+                    x: {
+                        ticks: {
+                            maxTicksLimit: 8,
+
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+
+                    y: {
+                        ticks: {
+                            maxTicksLimit: 6,
+
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
                         }
                     }
-                },
-                y: {
-                    ticks: {
-                        maxTicksLimit: 6,
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        }
-                    }
+
                 }
+
             }
         }
-    }
-);
-
+    );
 
 })
+
+
 .catch(error => {
 
     console.error("EROARE:", error);
