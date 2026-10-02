@@ -255,36 +255,63 @@ async function brent(){
  try{
 
   const url =
-   "https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1m&range=1d";
+   "https://r.jina.ai/https://oilprice.com/oil-price-charts/";
 
-  const data=await getJSON(url);
+  const response = await fetch(url,{cache:"no-store"});
 
-  const result=data.chart.result[0];
+  if(!response.ok)
+   throw new Error("HTTP "+response.status);
 
-  const close=result.indicators.quote[0].close;
-  const timestamps=result.timestamp;
+  const text = await response.text();
 
-  let i=close.length-1;
+  const lines = text.split("\n");
 
-  while(i>=0 && close[i]==null) i--;
+  let price = null;
+  let delay = "";
 
-  if(i<0) throw new Error();
+  for(let i=0;i<lines.length;i++){
+
+   if(lines[i].toLowerCase().includes("brent crude")){
+
+    const match = lines[i].match(
+     /Brent Crude\s*\|\s*([0-9]+(?:\.[0-9]+)?)/
+    );
+
+    if(match){
+     price = match[1];
+
+     const delayMatch =
+      lines[i].match(/\(([0-9]+-[A-Za-z]+ Delay)\)/);
+
+     if(delayMatch)
+      delay = delayMatch[1];
+
+     break;
+    }
+   }
+  }
+
+  if(!price)
+   throw new Error("Brent not found");
 
   $("brent").textContent =
-   "$"+Number(close[i]).toFixed(2);
+   "$"+Number(price).toFixed(2);
 
   $("brentInfo").textContent =
-   "Brent futures · "+
-   new Date(timestamps[i]*1000).toLocaleTimeString("ro-RO");
+   "OilPrice.com · "+(delay || "date publice");
 
  }catch(e){
 
+  console.error("Brent:",e);
+
   $("brent").textContent="Eroare";
+
+  $("brentInfo").textContent=
+   "OilPrice.com · indisponibil momentan";
 
  }
 
 }
-
 
 /* EURIBOR */
 
