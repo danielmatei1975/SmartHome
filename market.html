@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101418">
+<title>Market Watch</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#101418;
+ color:#fff;
+ font-family:Arial,sans-serif
+}
+header{
+ text-align:center;
+ padding:18px 10px 8px
+}
+h1{
+ margin:0;
+ font-size:24px
+}
+#updated{
+ color:#9da7b0;
+ font-size:12px;
+ margin-top:5px
+}
+main{
+ max-width:520px;
+ margin:auto;
+ padding:8px 12px 25px
+}
+.card{
+ background:#1a2026;
+ border-radius:16px;
+ padding:17px;
+ margin:10px 0;
+ box-shadow:0 2px 8px #0006
+}
+.title{
+ color:#aeb8c1;
+ font-size:13px;
+ text-transform:uppercase;
+ letter-spacing:1px
+}
+.value{
+ font-size:30px;
+ font-weight:bold;
+ margin-top:7px
+}
+.info{
+ color:#9da7b0;
+ font-size:12px;
+ margin-top:5px
+}
+.grid{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:9px;
+ margin-top:12px
+}
+.mini{
+ background:#242b32;
+ border-radius:12px;
+ padding:12px
+}
+.mini span{
+ color:#9da7b0;
+ font-size:12px
+}
+.mini b{
+ display:block;
+ font-size:21px;
+ margin-top:5px
+}
+button{
+ width:100%;
+ padding:14px;
+ border:0;
+ border-radius:12px;
+ background:#303b45;
+ color:white;
+ font-size:16px;
+ margin-top:4px
+}
+.error{color:#ff8d8d}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>MARKET WATCH</h1>
+<div id="updated">Se actualizeaza...</div>
+</header>
+
+<main>
+
+<div class="card">
+<div class="title">EUR / RON</div>
+<div class="value" id="eur">—</div>
+<div class="info" id="eurInfo">BNR</div>
+</div>
+
+<div class="card">
+<div class="title">Brent Crude</div>
+<div class="value" id="brent">—</div>
+<div class="info" id="brentInfo">USD / baril</div>
+</div>
+
+<div class="card">
+<div class="title">Bitcoin</div>
+<div class="value" id="btc">—</div>
+<div class="info" id="btcInfo">USD</div>
+</div>
+
+<div class="card">
+<div class="title">EURIBOR</div>
+
+<div class="grid">
+<div class="mini">
+<span>1 MONTH</span>
+<b id="e1">—</b>
+</div>
+
+<div class="mini">
+<span>3 MONTH</span>
+<b id="e3">—</b>
+</div>
+
+<div class="mini">
+<span>6 MONTH</span>
+<b id="e6">—</b>
+</div>
+
+<div class="mini">
+<span>12 MONTH</span>
+<b id="e12">—</b>
+</div>
+</div>
+
+<div class="info" id="euriborInfo">
+Datele publice Euribor au intarziere.
+</div>
+</div>
+
+<div class="card">
+<div class="title">BUCURESTI</div>
+<div class="value" id="temp">—</div>
+<div class="info" id="tempInfo">Temperatura exterioara</div>
+</div>
+
+<button onclick="updateAll()">↻ ACTUALIZEAZA ACUM</button>
+
+</main>
+
+<script>
+
+const $ = id => document.getElementById(id);
+
+async function getJSON(url){
+ const r = await fetch(url,{cache:"no-store"});
+ if(!r.ok) throw new Error("HTTP "+r.status);
+ return await r.json();
+}
+
+
+/* EUR/RON - BNR */
+
+async function eurRon(){
+
+ try{
+
+  const data = await getJSON(
+   "https://api.frankfurter.dev/v2/providers/bnr/rate/eur/ron"
+  );
+
+  $("eur").textContent =
+   Number(data.rate).toFixed(4)+" RON";
+
+  $("eurInfo").textContent =
+   "BNR · "+data.date;
+
+ }catch(e){
+
+  $("eur").textContent="Eroare";
+  $("eur").className="value error";
+
+ }
+
+}
+
+
+/* BITCOIN */
+
+async function bitcoin(){
+
+ try{
+
+  const data = await getJSON(
+   "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true"
+  );
+
+  $("btc").textContent =
+   "$"+Number(data.bitcoin.usd)
+   .toLocaleString("en-US",{maximumFractionDigits:2});
+
+  const change=data.bitcoin.usd_24h_change;
+
+  $("btcInfo").textContent =
+   (change>=0?"▲ ":"▼ ")+
+   Math.abs(change).toFixed(2)+
+   "% in ultimele 24h";
+
+ }catch(e){
+
+  $("btc").textContent="Eroare";
+
+ }
+
+}
+
+
+/* TEMPERATURA BUCURESTI */
+
+async function temperature(){
+
+ try{
+
+  const data = await getJSON(
+   "https://api.open-meteo.com/v1/forecast?latitude=44.4268&longitude=26.1025&current=temperature_2m&timezone=Europe%2FBucharest"
+  );
+
+  $("temp").textContent =
+   Number(data.current.temperature_2m).toFixed(1)+" °C";
+
+  $("tempInfo").textContent =
+   "Bucuresti · "+data.current.time.replace("T"," ");
+
+ }catch(e){
+
+  $("temp").textContent="Eroare";
+
+ }
+
+}
+
+
+/* BRENT */
+
+async function brent(){
+
+ try{
+
+  const url =
+   "https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1m&range=1d";
+
+  const data=await getJSON(url);
+
+  const result=data.chart.result[0];
+
+  const close=result.indicators.quote[0].close;
+  const timestamps=result.timestamp;
+
+  let i=close.length-1;
+
+  while(i>=0 && close[i]==null) i--;
+
+  if(i<0) throw new Error();
+
+  $("brent").textContent =
+   "$"+Number(close[i]).toFixed(2);
+
+  $("brentInfo").textContent =
+   "Brent futures · "+
+   new Date(timestamps[i]*1000).toLocaleTimeString("ro-RO");
+
+ }catch(e){
+
+  $("brent").textContent="Eroare";
+
+ }
+
+}
+
+
+/* EURIBOR */
+
+async function euribor(){
+
+ try{
+
+  /*
+   Date publice Euribor.
+   Sursa publica are intarziere.
+  */
+
+  const url =
+   "https://r.jina.ai/http://www.euribor-rates.eu/en/current-euribor-rates/";
+
+  const response=await fetch(url,{cache:"no-store"});
+
+  const text=await response.text();
+
+  function findRate(term){
+
+   const lines=text.split("\n");
+
+   for(const line of lines){
+
+    const l=line.toLowerCase();
+
+    if(l.includes("euribor") &&
+       l.includes(term)){
+
+     const m=line.match(/([0-9]+\.[0-9]+)/);
+
+     if(m) return m[1];
+
+    }
+
+   }
+
+   return null;
+  }
+
+  $("e1").textContent=
+   findRate("1 month") ?
+   findRate("1 month")+"%" : "—";
+
+  $("e3").textContent=
+   findRate("3 month") ?
+   findRate("3 month")+"%" : "—";
+
+  $("e6").textContent=
+   findRate("6 month") ?
+   findRate("6 month")+"%" : "—";
+
+  $("e12").textContent=
+   findRate("12 month") ?
+   findRate("12 month")+"%" : "—";
+
+  $("euriborInfo").textContent=
+   "Euribor · date publice cu intarziere";
+
+ }catch(e){
+
+  $("euriborInfo").textContent=
+   "Euribor indisponibil momentan";
+
+ }
+
+}
+
+
+/* ACTUALIZARE */
+
+async function updateAll(){
+
+ $("updated").textContent=
+  "Se actualizeaza...";
+
+ await Promise.all([
+  eurRon(),
+  brent(),
+  bitcoin(),
+  euribor(),
+  temperature()
+ ]);
+
+ $("updated").textContent=
+  "Ultima verificare: "+
+  new Date().toLocaleTimeString("ro-RO")+
+  " · refresh 60 sec";
+
+}
+
+
+/* PRIMA ACTUALIZARE */
+
+updateAll();
+
+
+/* REFRESH AUTOMAT */
+
+setInterval(updateAll,60000);
+
+</script>
+
+</body>
+</html>
